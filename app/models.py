@@ -38,7 +38,7 @@ class Role(db.Model):
 	users = db.relationship('User',backref='role',lazy='dynamic')
 
 	def __repr__(self):
-		return '<Role %s>' % self.name
+		return u'[角色： %s]' % self.name
 
 	@staticmethod
 	def insert_roles():
@@ -80,7 +80,9 @@ class User(UserMixin,db.Model):
 	name = db.Column(db.String(64))
 	location = db.Column(db.String(64))
 	about_me = db.Column(db.Text())
+	#创建时间
 	member_since = db.Column(db.DateTime(),default=datetime.utcnow)
+	#最后访问时间
 	last_seen = db.Column(db.DateTime(),default=datetime.utcnow)
 	avatar_hash = db.Column(db.String(32))
 	article_id = db.relationship('Article',backref='author',lazy='dynamic')
@@ -110,7 +112,9 @@ class User(UserMixin,db.Model):
 
 		#头像
 		if self.avatar_hash is None:
-			self.avatar_hash = hashlib.md5(self.username.encode('utf-8')).hexdigest()
+			#使用flask-admin这里得到的self为空
+			if self.username:
+				self.avatar_hash = hashlib.md5(self.username.encode('utf-8')).hexdigest()
 			# db.session.add(self)
 			# db.session.commit()
 

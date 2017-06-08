@@ -25,8 +25,10 @@ babel = Babel()
 
 
 
-admin_app = Admin(name='chahua3287',template_mode='bootstrap3',index_view=MyAdminIndexView())
+admin_app = Admin(name='chahua3287',index_view=MyAdminIndexView())
 
+
+# admin2 = Admin(url='/admin99', endpoint='admin2',name='chahua3287')
 from admin import *
 
 #session_protection属性可以设置None，basic，strong提供不同的安全等级防止用户会话遭篡改

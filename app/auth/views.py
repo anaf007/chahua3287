@@ -4,28 +4,53 @@ Created 2017-05-30
 Author: by anaf
 note:auth视图函数
 """
-from flask import render_template,redirect,request,url_for,flash
+from flask import render_template,redirect,request,url_for,flash,make_response,current_app,session
 from . import auth
 from flask.ext.login import login_user,login_required,logout_user,current_user
 from ..models import User
 from .forms import LoginForm
 from app import db
 
+
+
+
+# @auth.route('/verify')
+# def verify():
+# 	response = make_response.generate_verification_code()
+# 	response.headers['Content-Type'] = 'image/jpeg'
+# 	return response
+
+
+
+
+
+
 @auth.route('/login',methods=['GET'])
 def login():
+	print session['verify']
 	return render_template('auth/login.html',form=LoginForm())
 
 @auth.route('/login',methods=['POST'])
 def login_post():
 	form = LoginForm()
 	if form.validate_on_submit():
+		try:
+			if form.verification_code.data.upper() != session['verify']:
+				flash(u'验证码错误')
+				return redirect(url_for('.login'))
+		except Exception, e:
+			flask(u'校验错误')
+			return redirect(url_for('.login'))
+
 		user = User.query.filter_by(username=form.username.data).first()
 		if user is not None and user.verify_password(form.password.data):
 			login_user(user,form.remember_me.data)
-			# return redirect(request.args.get('next') or url_for('main.main_login'))
 			return redirect(request.args.get('next') or url_for('main.main_login'))
 		flash(u'校验数据错误')
-	return redirect('.login')
+	else:
+		flash(u'校验数据错误')
+
+	return redirect(url_for('.login'))
 
 @auth.route('/logout')
 @login_required
@@ -65,5 +90,10 @@ def before_request():
 	if current_user.is_authenticated:
 		current_user.ping()
 		#书本中还代码的  不知道方法有什么用  所以省去也没见有什么变化
+
+
+
+
+
 
 

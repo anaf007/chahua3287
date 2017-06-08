@@ -20,6 +20,12 @@ class MyAdminIndexView(admin.AdminIndexView):
 	@admin.expose('/')
 	def index(self):
 		return self.render('admin/index.html')
+
+	@admin.expose('/superadmin')
+	def superadmin(self):
+		return self.render('admin/index.html')
+
+	
 """
 	@expose('/')
 	def index(self):
