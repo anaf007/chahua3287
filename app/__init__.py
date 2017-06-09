@@ -13,7 +13,7 @@ from config import config
 from flask.ext.login import LoginManager
 from flask.ext.admin import Admin
 from flask_babelex import Babel
-from app.admin_views import MyAdminIndexView
+
 
 DEFAULT_APP_NAME = 'chahua3287'
 
@@ -25,11 +25,10 @@ babel = Babel()
 
 
 
-admin_app = Admin(name='chahua3287',index_view=MyAdminIndexView())
 
 
 # admin2 = Admin(url='/admin99', endpoint='admin2',name='chahua3287')
-from admin import *
+
 
 #session_protection属性可以设置None，basic，strong提供不同的安全等级防止用户会话遭篡改
 login_manager.session_protection ='strong'
@@ -46,6 +45,11 @@ def create_app(config_name):
 	configure_extensions(app)
 	#蓝图
 	configure_blueprint(app)
+	#创建flask-admin后台
+	configure_create_admin(app)
+
+	
+
 
 	
 	# from .users import users as user_blueprint
@@ -83,7 +87,7 @@ def configure_extensions(app):
 	mail.init_app(app)
 	moment.init_app(app)
 	db.init_app(app)
-	admin_app.init_app(app)
+	
 	babel.init_app(app)
 
 
@@ -100,6 +104,22 @@ def configure_config(app):
 	app.config['UPLOAD_FOLDER_ADMIN_IMAGES'] ='\\static\\uploads\\admin\\images'
 	app.config['UPLOAD_FOLDER_ADMIN'] ='\\static\\uploads\\admin'
 	
+
+def configure_create_admin(app):
+	from app.admin_views import MyAdminIndexView
+	admin_app = Admin(name='chahua3287',index_view=MyAdminIndexView())
+	from admin import *
+	admin_app.add_view(ModelView_User(db.session,name=u'用户管理'))
+	admin_app.add_view(ModelView(Article,db.session,name=u'文章管理'))
+	admin_app.add_view(ModelView(Category,db.session,name=u'栏目管理'))
+	admin_app.add_view(ModelView(User_msg,db.session,name=u'留言管理'))
+	# admin_app.add_view(ModelView(Category_attribute,db.session,name=u'栏目属性表(不要随意更改)'))
+	admin_app.add_view(ModelView(Comment,db.session,name=u'评论管理'))
+	admin_app.add_view(Admin_static_file(path,'/static', name=u'静态文件'))
+	admin_app.add_view(Admin_logout(name=u'退出'))
+	admin_app.init_app(app)
+
+
 
 
 

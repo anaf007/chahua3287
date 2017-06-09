@@ -8,7 +8,7 @@ note:admin视图函数
 
 from flask import Flask,request,redirect,url_for
 from flask.ext.admin import Admin, BaseView, expose
-from app import admin_app,db
+from app import db
 from app.models import Article,Category,User,User_msg,Category_attribute,Comment,Role
 from flask.ext.admin.contrib.sqla import ModelView
 from flask.ext.login import current_user,login_required
@@ -75,7 +75,7 @@ class ModelView_User(ModelView):
 
 	#删除行
 	column_exclude_list = ['comments', 'article_id','followed','followers',
-							'password_hash','about_me','member_since']
+							'password_hash','about_me','member_since','location']
 
 	#搜索列表
 	column_searchable_list = ['username', 'name']
@@ -87,7 +87,7 @@ class ModelView_User(ModelView):
 	# create_modal = True
 	# edit_modal = True
 	#移除创建和编辑列表的字段
-	form_excluded_columns = ['comments','last_seen', 'avatar_hash','article_id','followed','followers','member_since']
+	form_excluded_columns = ['comments','last_seen', 'avatar_hash','article_id','followed','followers','member_since','location']
 	#form  WTForms 表单验证，详细验证规则 看WTForms 
 	# form_args={'name':{'label':u'名字','validators':[Required()]}}
 	#制定form渲染参数
@@ -190,14 +190,6 @@ class Admin_logout(BaseView):
 # 		return self.render('admin/index.html')
 
 # admin_app.add_view(B_View_User())
-admin_app.add_view(ModelView_User(db.session,name=u'用户管理'))
-admin_app.add_view(ModelView(Article,db.session,name=u'文章管理'))
-admin_app.add_view(ModelView(Category,db.session,name=u'栏目管理'))
-admin_app.add_view(ModelView(User_msg,db.session,name=u'留言管理'))
-# admin_app.add_view(ModelView(Category_attribute,db.session,name=u'栏目属性表(不要随意更改)'))
-admin_app.add_view(ModelView(Comment,db.session,name=u'评论管理'))
-admin_app.add_view(Admin_static_file(path,'/static', name=u'静态文件'))
-admin_app.add_view(Admin_logout(name=u'退出'))
 
 
 

@@ -27,7 +27,6 @@ from app import db
 
 @auth.route('/login',methods=['GET'])
 def login():
-	print session['verify']
 	return render_template('auth/login.html',form=LoginForm())
 
 @auth.route('/login',methods=['POST'])
