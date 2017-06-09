@@ -19,7 +19,12 @@ from jinja2 import Markup
 from flask_admin.form import rules
 from flask.ext.admin.contrib.fileadmin import FileAdmin
 import hashlib
-
+from .decorators import admin_required
+import os.path as op
+path = op.join(op.dirname(__file__), 'static/uploads')
+from flask_admin import form
+import random
+from werkzeug import secure_filename
 
 # class admin_index_view(BaseView):
 # 	@expose('/')
@@ -49,6 +54,7 @@ class CKTextAreaField(TextAreaField):
 #User模型视图
 class ModelView_User(ModelView):
 	#认证
+	# @admin_required	
 	def is_accessible(self):
 		return current_user.is_authenticated
 
@@ -174,8 +180,6 @@ class Admin_static_file(FileAdmin):
 	def inaccessible_callback(self, name, **kwargs):
 		return redirect(url_for('auth.login', next=request.url))
 
-import os.path as op
-path = op.join(op.dirname(__file__), 'static/uploads')
 
 
 #用户退出
@@ -184,14 +188,88 @@ class Admin_logout(BaseView):
 	def index(self):
 		return redirect(url_for('auth.logout'))
 
-# class B_View_User(BaseView):
-# 	@expose('/')
-# 	def index(self):
-# 		return self.render('admin/index.html')
-
-# admin_app.add_view(B_View_User())
 
 
+#文章模型视图
+class ModelView_Article(ModelView):
+	file_str = ''
+	for i in range(5):
+		file_str += chr(random.randint(65, 90))
+	#认证
+	# @admin_required	
+	def is_accessible(self):
+		return current_user.is_authenticated
 
+	#跳转
+	def inaccessible_callback(self, name, **kwargs):
+		return redirect(url_for('auth.login', next=request.url))
+
+	def _list_thumbnail(view, context, model, name):
+		#如果没有图片显示缩略图
+		if not model.thumbnail:
+			return Markup('<img src="%s">' % url_for('static',filename="uploads/admin/thumbnail/"+form.thumbgen_filename('111')))
+		return Markup('<img src="%s">' % url_for('static',filename="uploads/admin/thumbnail/"+form.thumbgen_filename(model.thumbnail)))
+
+	#列表行重写
+	column_labels = {
+		'id':u'序号',
+		'title' : u'文章标题',
+		'show':u'是否显示',
+		'click':u'查看次数',
+		'timestamp':u'发布时间',
+		'author_id':u'作者',
+		'author_id':u'栏目列表',
+		'seokey':u'SEO优化词',
+		'seoDescription ':u'SEO优化'
+	}
+
+	#列表删除行
+	column_exclude_list = ['comments','seokey','seoDescription','body']
+	#格式化列显示
+	column_formatters = {'thumbnail':_list_thumbnail}
+	#格式化创建表格为文件上传
+	def prefix_name(obj, file_data):
+		parts = op.splitext(file_data.filename)
+		return ModelView_Article.file_str+'_'+secure_filename('%s%s' % parts)
+	
+	form_overrides = {
+		'thumbnail': form.ImageUploadField
+	}
+	
+	form_args = {
+		'thumbnail': {
+			'label': u'缩略图',
+		}
+	}
+	
+	form_extra_fields = {
+		'thumbnail': form.ImageUploadField(u'缩略图',
+			base_path=path+'/admin/thumbnail/',
+			thumbnail_size=(50, 50, True),
+			namegen=prefix_name  #本地保存文件名称
+		)
+	}
+
+	page_size = 3
+
+	def __init__(self, session, **kwargs):
+		super(ModelView_Article, self).__init__(Article, session, **kwargs)
+
+
+
+#分类模型视图
+class ModelView_Category(ModelView):
+	#认证
+	@admin_required	
+	def is_accessible(self):
+		return current_user.is_authenticated
+
+	#跳转
+	def inaccessible_callback(self, name, **kwargs):
+		return redirect(url_for('auth.login', next=request.url))
+
+
+	def __init__(self, session, **kwargs):
+		super(ModelView_Category, self).__init__(Category, session, **kwargs)
 
 

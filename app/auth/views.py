@@ -10,8 +10,7 @@ from flask.ext.login import login_user,login_required,logout_user,current_user
 from ..models import User
 from .forms import LoginForm
 from app import db
-
-
+import random
 
 
 # @auth.route('/verify')
