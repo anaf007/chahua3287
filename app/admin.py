@@ -19,7 +19,10 @@ from jinja2 import Markup
 from flask_admin.form import rules
 from flask.ext.admin.contrib.fileadmin import FileAdmin
 import hashlib
-
+from .decorators import admin_required
+import os.path as op
+path = op.join(op.dirname(__file__), 'static/uploads')
+from flask_admin import form
 
 # class admin_index_view(BaseView):
 # 	@expose('/')
@@ -49,6 +52,7 @@ class CKTextAreaField(TextAreaField):
 #User模型视图
 class ModelView_User(ModelView):
 	#认证
+	# @admin_required	
 	def is_accessible(self):
 		return current_user.is_authenticated
 
@@ -174,8 +178,6 @@ class Admin_static_file(FileAdmin):
 	def inaccessible_callback(self, name, **kwargs):
 		return redirect(url_for('auth.login', next=request.url))
 
-import os.path as op
-path = op.join(op.dirname(__file__), 'static/uploads')
 
 
 #用户退出
@@ -191,7 +193,72 @@ class Admin_logout(BaseView):
 
 # admin_app.add_view(B_View_User())
 
+#文章模型视图
+class ModelView_Article(ModelView):
+	#认证
+	@admin_required	
+	def is_accessible(self):
+		return current_user.is_authenticated
+
+	#跳转
+	def inaccessible_callback(self, name, **kwargs):
+		return redirect(url_for('auth.login', next=request.url))
+
+	def _list_thumbnail(view, context, model, name):
+		if not model.thumbnail:
+			return ''
+		print form.thumbgen_filename(model.thumbnail)
+		print '-----'
+		print model.thumbnail
+		return Markup('<img src="%s">' % url_for('static',filename="uploads/admin/"+form.thumbgen_filename(model.thumbnail)))
+
+	#列表行重写
+	column_labels = {
+		'id':u'序号',
+		'title' : u'文章标题',
+		'show':u'是否显示',
+		'click':u'查看次数',
+		'timestamp':u'发布时间',
+		'author_id':u'作者',
+		'author_id':u'栏目列表',
+		'seokey':u'SEO优化词'
+	}
+
+	#删除行
+	column_exclude_list = ['comments','seokey','seoDescription','body']
+
+	column_formatters = {'thumbnail':_list_thumbnail}
+
+	form_overrides = {
+		'thumbnail': form.FileUploadField
+	}
+	form_args = {
+		'thumbnail': {
+			'label': u'缩略图',
+			'base_path': path+'/admin/'
+		}
+	}
+	form_extra_fields = {'path': form.ImageUploadField('Image',base_path=path+'/admin/',thumbnail_size=(100, 100, True))}
 
 
 
+	def __init__(self, session, **kwargs):
+		super(ModelView_Article, self).__init__(Article, session, **kwargs)
+
+
+
+#分类模型视图
+class ModelView_Category(ModelView):
+	#认证
+	@admin_required	
+	def is_accessible(self):
+		return current_user.is_authenticated
+
+	#跳转
+	def inaccessible_callback(self, name, **kwargs):
+		return redirect(url_for('auth.login', next=request.url))
+
+
+	def __init__(self, session, **kwargs):
+		super(ModelView_Category, self).__init__(Category, session, **kwargs)
 

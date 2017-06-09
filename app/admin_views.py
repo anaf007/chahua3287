@@ -3,14 +3,15 @@ from flask.ext import admin,login
 from flask.ext.admin import helpers, expose
 from flask import redirect,url_for,request
 from wtforms import form, fields, validators
-from .decorators import admin_required
+# from .decorators import admin_required
 
 #主页视图
 class MyAdminIndexView(admin.AdminIndexView):
 	#增加这个必须要登录后才能访问，不然显示403错误
 	#但是还是不许再每一个函数前加上这么判定的  ，不然还是可以直接通过地址访问
 	#加入了角色管理只能是超级管理员才能登录后台，注意导入初始化的顺序，不然报错
-	@admin_required
+	#加入了admin_required，那么整个后台加入了权限判断，而不是单独首页，不知道是不是bug
+	# @admin_required	
 	def is_accessible(self):
 		return login.current_user.is_authenticated
 
@@ -23,9 +24,9 @@ class MyAdminIndexView(admin.AdminIndexView):
 	def index(self):
 		return self.render('admin/index.html')
 
-	@admin.expose('/superadmin')
-	def superadmin(self):
-		return self.render('admin/index.html')
+	# @admin.expose('/superadmin')
+	# def superadmin(self):
+	# 	return self.render('admin/index.html')
 
 	
 """

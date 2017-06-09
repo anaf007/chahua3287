@@ -110,7 +110,7 @@ def configure_create_admin(app):
 	admin_app = Admin(name='chahua3287',index_view=MyAdminIndexView())
 	from admin import *
 	admin_app.add_view(ModelView_User(db.session,name=u'用户管理'))
-	admin_app.add_view(ModelView(Article,db.session,name=u'文章管理'))
+	admin_app.add_view(ModelView_Article(db.session,name=u'文章管理'))
 	admin_app.add_view(ModelView(Category,db.session,name=u'栏目管理'))
 	admin_app.add_view(ModelView(User_msg,db.session,name=u'留言管理'))
 	# admin_app.add_view(ModelView(Category_attribute,db.session,name=u'栏目属性表(不要随意更改)'))
