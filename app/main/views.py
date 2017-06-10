@@ -7,15 +7,49 @@ Author: by anaf
 from flask import render_template,redirect,url_for,request,flash,current_app,make_response
 from . import main
 from .. import db
-from ..models import Article,Comment,Permission
+from ..models import Article,Comment,Permission,CategoryTop,Category
 from  flask.ext.login import login_required,current_user
 from ..decorators import admin_required,permission_required
 from .forms import PostForm,CommentForm
 import os,random,datetime
+
+
+#顶级栏目
+@main.route('/nav_top/<int:id>')
+def nav_top(id=0):
+    #
+    one = CategoryTop.query.get_or_404(id)
+    categorts = CategoryTop.query.all()
+    #获取父栏目下子栏目下所有文章
+    article = Article.query.join(Category,Category.id==Article.category_id).\
+        join(CategoryTop,CategoryTop.id==Category.category_top_id).\
+        filter(Category.category_top_id==one.id).all()
+    return render_template(one.template,one=one,nav=categorts,articles=article,one_top=one)
+
+#栏目
+@main.route('/nav/<int:id>')
+def nav(id=0):
+    one = Category.query.get_or_404(id)
+    categorts = CategoryTop.query.all()
+    one_top = CategoryTop.query.get_or_404(one.category_top_id)
+    article_list = Article.query.filter_by(category_id=one.id).all()
+    return render_template(one.template,one=one,nav=categorts,one_top=one_top,article=article_list)
+
+#文章
+@main.route('/article/<int:id>')
+def article(id=0):
+    articles = Article.query.get_or_404(id)
+    categorts = CategoryTop.query.all()
+    one = Category.query.get_or_404(articles.category_id)
+    one_top = CategoryTop.query.get_or_404(one.category_top_id)
+    return render_template('article.html',
+                        article=articles,nav=categorts,
+                        one=one,one_top=one_top)
  
 @main.route('/')
 def index():
-	return render_template('index.html')
+    categorts = CategoryTop.query.all()
+    return render_template('main/index.html',nav=categorts)
 
 #需要登陆访问
 @main.route('/main_login')
@@ -118,3 +152,14 @@ def UploadFileImage():
     return response
 
 
+
+#请求上下文 栏目的上级目录的读取
+@main.context_processor
+def Get_Nav():
+    def get(id):
+        pid =  Category.query.filter_by(category_top_id=url).first().pid
+        if pid ==0:
+            return []
+        return Navcat.query.filter_by(pid=pid).order_by('sort').all()
+        
+    return dict(Get_Nav=get)
