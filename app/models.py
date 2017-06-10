@@ -38,7 +38,7 @@ class Role(db.Model):
 	users = db.relationship('User',backref='role',lazy='dynamic')
 
 	def __repr__(self):
-		return u'[角色： %s]' % self.name
+		return self.name
 
 	@staticmethod
 	def insert_roles():
@@ -119,7 +119,7 @@ class User(UserMixin,db.Model):
 			# db.session.commit()
 
 	def __repr__(self):
-		return '<User %r>' % self.username
+		return self.username
 
 	@property
 	def password(self):
@@ -231,18 +231,17 @@ class Article(db.Model):
 	seokey = db.Column(db.String(128))
 	#描述
 	seoDescription = db.Column(db.String(200))
-	#栏目内容
-	body = db.Column(db.Text)
 	#创建时间
 	timestamp = db.Column(db.DateTime,index=True,default=datetime.utcnow)
 	#用户角色 多对一   此表为多
 	author_id = db.Column(db.Integer,db.ForeignKey('users.id'))
 	#评论 一对多 对应多条评论
 	comments = db.relationship('Comment', backref='articles', lazy='dynamic')
-	#栏目列表 多对一 此表为多
-	author_id = db.Column(db.Integer,db.ForeignKey('users.id'))
-
-	# category_id = db.relationship('Category', backref=db.backref('article_set', lazy='dynamic'))
+	#栏目内容
+	body = db.Column(db.Text)
+	#所属栏目
+	category_id = db.Column(db.Integer,db.ForeignKey('categorys.id'))
+	# category_id = db.relationship('Category', backref=db.backref('category', lazy='dynamic'))
 
 	def __repr__(self):
 		return u"<文章:{}>".format(self.title)
@@ -297,16 +296,30 @@ category_attribute_reg = db.Table('category_attribute_register',
 							)
 
 
-#多对多关系
-#自引用关系
-#栏目pid
-class CategoryPid(db.Model):
-	__tablename__ = 'category_pid'
-	category_id = db.Column(db.Integer, db.ForeignKey('categorys.id'),primary_key=True)
-	category_pid = db.Column(db.Integer, db.ForeignKey('categorys.id'),primary_key=True)
+#顶级栏目
+class CategoryTop(db.Model):
+	__tablename__ = 'category_top'
+	id = db.Column(db.Integer,primary_key=True)
+	title = db.Column(db.String(255))
+	show = db.Column(db.Boolean,default=True)
+	nlink = db.Column(db.Text)
+	sort = db.Column(db.Integer,default=10)
+	template  = db.Column(db.String(64))
+	seoKey = db.Column(db.String(200))
+	seoDescription = db.Column(db.String(200))
+	body = db.Column(db.Text)
+	category = db.relationship('Category',backref='category_pid',lazy='dynamic')
+	category_attribute_id = db.Column(db.Integer,db.ForeignKey('category_attribute.id'))
+	
+	
+
+	def __repr__(self):
+		return self.title
+	
 
 
 
+#本来是想用多对多自引用关系 但是出现的错误太多，解决起来花很多时间，干脆用一对多关系解决父级栏目关系
 #栏目导航分类
 class Category(db.Model):
 	__tablename__ = 'categorys'
@@ -319,31 +332,20 @@ class Category(db.Model):
 	template  = db.Column(db.String(64))
 	body = db.Column(db.Text)
 	#外键属性表
-	category_attribute_id = db.relationship('Category_attribute',
-								secondary=category_attribute_reg,
-								backref=db.backref('category',lazy='dynamic'),
-								lazy='dynamic')
+	category_attribute_id = db.Column(db.Integer,db.ForeignKey('category_attribute.id'))
+	#父级栏目
+
+	category_top_id = db.Column(db.Integer,db.ForeignKey('category_top.id'))
+	#一对多文章
+	article_id = db.relationship('Article',backref='category',lazy='dynamic')
+	# article_id = db.Column(db.Integer,db.ForeignKey('Article.id'))
 	seoKey = db.Column(db.String(200))
 	seoDescription = db.Column(db.String(200))
-	#多对多关系
-	# pid = db.Column(db.Integer, db.ForeignKey('category.id'))
-	# pcategory = db.relationship('Category', remote_side=[id])
-	categoryed = db.relationship('CategoryPid',
-								foreign_keys=[CategoryPid.category_id],
-								backref=db.backref('categoryer', lazy='joined'),
-								lazy='dynamic',
-								cascade='all, delete-orphan')
-	categoryers = db.relationship('CategoryPid',
-								foreign_keys=[CategoryPid.category_pid],
-								backref=db.backref('categoryed', lazy='joined'),
-								lazy='dynamic',
-								cascade='all, delete-orphan')
+	
 
 	def __repr__(self):
-		return "<category:{}>".format(self.title)
+		return self.title
 
-	def __init__(self, name, pcategory=None):
-		self.pcategory = pcategory
 
 
 
@@ -353,6 +355,10 @@ class Category_attribute(db.Model):
 	__tablename__ = 'category_attribute'
 	id = db.Column(db.Integer,primary_key=True)
 	name = db.Column(db.String(64))
+	category_id = db.relationship('Category',backref='category_attribute',lazy='dynamic')
+	category_top_id = db.relationship('CategoryTop',backref='category_top_attribute',lazy='dynamic')
+	def __repr__(self):
+		return self.name
 
 
 #留言表

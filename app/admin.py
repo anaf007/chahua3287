@@ -9,7 +9,7 @@ note:admin视图函数
 from flask import Flask,request,redirect,url_for
 from flask.ext.admin import Admin, BaseView, expose
 from app import db
-from app.models import Article,Category,User,User_msg,Category_attribute,Comment,Role
+from app.models import Article,Category,User,User_msg,Category_attribute,Comment,Role,CategoryTop
 from flask.ext.admin.contrib.sqla import ModelView
 from flask.ext.login import current_user,login_required
 from wtforms.validators import Required
@@ -137,6 +137,7 @@ class ModelView_User(ModelView):
 		'avatar_hash':u'头像',
 		'last_seen':u'最后访问时间',
 		'about_me':u'自我介绍',
+		'role':u'角色',
     }
 	# column_list = ('id', 'username','name',
 	# 			'location','role_id','avatar_hash')
@@ -210,21 +211,6 @@ class ModelView_Article(ModelView):
 			return Markup('<img src="%s">' % url_for('static',filename="uploads/admin/thumbnail/"+form.thumbgen_filename('111')))
 		return Markup('<img src="%s">' % url_for('static',filename="uploads/admin/thumbnail/"+form.thumbgen_filename(model.thumbnail)))
 
-	#列表行重写
-	column_labels = {
-		'id':u'序号',
-		'title' : u'文章标题',
-		'show':u'是否显示',
-		'click':u'查看次数',
-		'timestamp':u'发布时间',
-		'author_id':u'作者',
-		'author_id':u'栏目列表',
-		'seokey':u'SEO优化词',
-		'seoDescription ':u'SEO优化'
-	}
-
-	#列表删除行
-	column_exclude_list = ['comments','seokey','seoDescription','body']
 	#格式化列显示
 	column_formatters = {'thumbnail':_list_thumbnail}
 	#格式化创建表格为文件上传
@@ -236,11 +222,11 @@ class ModelView_Article(ModelView):
 		'thumbnail': form.ImageUploadField
 	}
 	
-	form_args = {
-		'thumbnail': {
-			'label': u'缩略图',
-		}
-	}
+	# form_args = {
+	# 	'thumbnail': {
+	# 		'label': u'缩略图',
+	# 	}
+	# }
 	
 	form_extra_fields = {
 		'thumbnail': form.ImageUploadField(u'缩略图',
@@ -250,14 +236,91 @@ class ModelView_Article(ModelView):
 		)
 	}
 
-	page_size = 3
+	#列表行重写
+	column_labels = {
+		'id':u'序号',
+		'title' : u'文章标题',
+		'show':u'是否显示',
+		'click':u'查看次数',
+		'timestamp':u'发布时间',
+		'author_id':u'作者',
+		'seokey':u'SEO优化词',
+		'seoDescription':u'SEO优化',
+		'body':u'内容',
+		'author':u'作者',
+		'thumbnail':u'缩略图',
+		'category':u'所属栏目',
+	}
+
+	#显示列表行删除
+	column_exclude_list = ['comments','seokey','seoDescription','body','Author']
+	
+	#分页
+	page_size = 20
+	#富文本编辑器
+	form_widget_args = {
+		'body': {
+		'rows': 5,
+		'style': 'color: black'
+		}
+	}
+	extra_js = ['/static/ckeditor/ckeditor.js']
+	form_overrides ={'body':CKTextAreaField}
+
+	#搜索列表
+	column_searchable_list = ['title', 'body']
+
+	#移除创建和编辑列表的字段
+	form_excluded_columns = ['click','author', 'comments']
+	#更改模型，页面取消添加的作者在后端添加防止更改
+	def on_model_change(self, form, Article, is_created):
+		Article.author = current_user
+	
 
 	def __init__(self, session, **kwargs):
 		super(ModelView_Article, self).__init__(Article, session, **kwargs)
 
 
+#顶级栏目模型视图
+class ModelView_CategoryTop(ModelView):
+	#认证
+	@admin_required	
+	def is_accessible(self):
+		return current_user.is_authenticated
 
-#分类模型视图
+	#跳转
+	def inaccessible_callback(self, name, **kwargs):
+		return redirect(url_for('auth.login', next=request.url))
+
+	#列表行重写
+	column_labels = {
+		'id':u'序号',
+		'title' : u'栏目名称',
+		'show':u'是否显示',
+		'sort':u'栏目排序',
+		'nlink':u'外部链接',
+		'template':u'栏目模板',
+		'body':u'栏目内容',
+		'seoDescription':u'SEO优化',
+		'seoKey':u'SEO关键词',
+		'category_top_attribute':u'栏目属性',
+	}
+
+	#创建和编辑列表删除列
+	form_excluded_columns = ['category']
+	#显示列表删除行
+	column_exclude_list = ['body']
+	#富文本编辑器
+	extra_js = ['/static/ckeditor/ckeditor.js']
+	form_overrides ={'body':CKTextAreaField}
+
+
+	def __init__(self, session, **kwargs):
+		super(ModelView_CategoryTop, self).__init__(CategoryTop, session, **kwargs)
+	
+
+
+#栏目分类模型视图
 class ModelView_Category(ModelView):
 	#认证
 	@admin_required	
@@ -267,6 +330,32 @@ class ModelView_Category(ModelView):
 	#跳转
 	def inaccessible_callback(self, name, **kwargs):
 		return redirect(url_for('auth.login', next=request.url))
+
+	#列表行重写
+	column_labels = {
+		'id':u'序号',
+		'title' : u'栏目名称',
+		'show':u'是否显示',
+		'sort':u'栏目排序',
+		'nlink':u'外部链接',
+		'template':u'栏目模板',
+		'body':u'栏目内容',
+		'seoDescription':u'SEO优化',
+		'seoKey':u'SEO关键词',
+		'category_pid':u'上级栏目',
+		'category_attribute':u'栏目属性',
+	}
+	#列表删除行
+	column_exclude_list = ['pubd','seoKey','seoDescription','body']
+	#移除创建和编辑列表的字段
+	form_excluded_columns = ['pubd','article_id']
+
+	extra_js = ['/static/ckeditor/ckeditor.js']
+	form_overrides ={'body':CKTextAreaField}
+
+	def on_model_change(self, form, Category, is_created):
+		# print Category
+		pass
 
 
 	def __init__(self, session, **kwargs):
